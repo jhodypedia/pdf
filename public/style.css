@@ -1,0 +1,51 @@
+/* Mengatur background dan padding untuk keseluruhan halaman */
+body {
+    background-color: #f8f9fa;
+    padding-top: 20px;
+    padding-bottom: 20px;
+  }
+  
+  /* Mengatur ukuran card */
+  .card {
+    border-radius: 10px;
+    box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.1);
+  }
+  
+  .card-header {
+    background-color: #007bff;
+    color: white;
+  }
+  
+  .card-body {
+    background-color: white;
+  }
+  
+  /* Button custom */
+  .btn-primary, .btn-success, .btn-secondary {
+    border-radius: 25px;
+    font-weight: bold;
+  }
+  
+  .btn-primary:hover, .btn-success:hover, .btn-secondary:hover {
+    opacity: 0.9;
+  }
+  
+  /* Styling untuk table yang responsive */
+  .table-responsive {
+    overflow-x: auto;
+  }
+  
+  .table th, .table td {
+    text-align: center;
+  }
+  
+  .table th {
+    background-color: #f1f1f1;
+  }
+  
+  .card-footer {
+    background-color: #f9f9f9;
+    text-align: center;
+    padding: 10px;
+  }
+  

@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Upload PDF dan Input Tabel</title>
+
+  <!-- Link ke Bootstrap CSS dan Toastr -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+
+  <!-- Link ke custom CSS -->
+  <style>
+    #toastr-container {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 9999;
+    }
+    .card {
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+  </style>
+</head>
+<body>
+
+<div class="container mt-5">
+  <!-- Card untuk Mengisi Data Tabel -->
+  <div class="card shadow-sm" id="inputTableSection">
+    <div class="card-header text-center">
+      <h3>Buat Tabel PDF</h3>
+    </div>
+    <div class="card-body">
+      <form id="createTableForm">
+        <div class="mb-3">
+          <label for="tableName" class="form-label">Nama Tabel</label>
+          <input type="text" class="form-control" id="tableName" placeholder="Masukkan nama tabel" required>
+        </div>
+        <div class="mb-3">
+          <label for="numColumns" class="form-label">Jumlah Kolom</label>
+          <input type="number" class="form-control" id="numColumns" placeholder="Jumlah kolom" required>
+        </div>
+        <div id="columnsSection"></div> <!-- Kolom input yang akan ditambahkan -->
+        <button type="button" class="btn btn-primary" id="generateTable">Buat Tabel</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Form Input Data Tabel -->
+  <div class="card shadow-sm mt-4" id="dataInputCard" style="display: none;">
+    <div class="card-header text-center">
+      <h3>Input Data Tabel</h3>
+    </div>
+    <div class="card-body">
+      <form id="dataForm">
+        <div id="dataFields"></div> <!-- Form untuk mengisi data tabel -->
+        <button type="submit" class="btn btn-success">Tambah Data</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Tabel yang menunjukkan hasil input -->
+  <div class="card shadow-sm mt-4" id="resultCard" style="display: none;">
+    <div class="card-header text-center">
+      <h3>Hasil Input Tabel</h3>
+    </div>
+    <div class="card-body">
+      <div id="resultTable" class="table-responsive">
+        <!-- Tabel hasil input akan ditambahkan di sini -->
+      </div>
+      <button type="button" class="btn btn-primary" id="finishButton" style="display: none;">Selesai</button>
+      <button type="button" class="btn btn-success" id="downloadButton" style="display: none;">Download PDF</button>
+    </div>
+  </div>
+</div>
+
+<!-- Import Script -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+<script>
+  $(document).ready(function () {
+    let tableData = [];
+    let columnNames = [];
+
+    // Menambahkan kolom secara dinamis berdasarkan input jumlah kolom
+    $('#numColumns').on('input', function () {
+      const numColumns = $(this).val();
+      $('#columnsSection').empty();
+
+      for (let i = 0; i < numColumns; i++) {
+        $('#columnsSection').append(`
+          <div class="mb-3">
+            <label for="column${i}" class="form-label">Nama Kolom ${i + 1}</label>
+            <input type="text" class="form-control" id="column${i}" placeholder="Nama kolom ${i + 1}">
+          </div>
+        `);
+      }
+    });
+
+    // Menangani tombol "Buat Tabel"
+    $('#generateTable').click(function () {
+      const tableName = $('#tableName').val();
+      const numColumns = $('#numColumns').val();
+
+      if (!tableName || numColumns <= 0) {
+        toastr.error('Harap masukkan nama tabel dan jumlah kolom!');
+        return;
+      }
+
+      columnNames = [];
+      for (let i = 0; i < numColumns; i++) {
+        columnNames.push($(`#column${i}`).val());
+      }
+
+      if (columnNames.includes("")) {
+        toastr.error('Semua nama kolom harus diisi!');
+        return;
+      }
+
+      // Menampilkan form input data tabel
+      $('#dataInputCard').show();
+      $('#inputTableSection').hide();
+
+      // Reset form input data
+      $('#dataFields').empty();
+      for (let i = 0; i < columnNames.length; i++) {
+        $('#dataFields').append(`
+          <div class="mb-3">
+            <label for="dataField${i}" class="form-label">${columnNames[i]}</label>
+            <input type="text" class="form-control" id="dataField${i}" placeholder="${columnNames[i]}" required>
+          </div>
+        `);
+      }
+    });
+
+    // Menangani submit data tabel
+    $('#dataForm').submit(function (event) {
+      event.preventDefault();
+
+      const rowData = [];
+      columnNames.forEach((col, index) => {
+        rowData.push($(`#dataField${index}`).val());
+      });
+
+      tableData.push(rowData);
+      updateResultTable();
+
+      // Reset form input data
+      $('#dataFields').empty();
+      for (let i = 0; i < columnNames.length; i++) {
+        $('#dataFields').append(`
+          <div class="mb-3">
+            <label for="dataField${i}" class="form-label">${columnNames[i]}</label>
+            <input type="text" class="form-control" id="dataField${i}" placeholder="${columnNames[i]}" required>
+          </div>
+        `);
+      }
+
+      // Menampilkan tombol "Selesai" dan form hasil
+      $('#finishButton').show();
+      $('#resultCard').show();
+    });
+
+    // Menampilkan tabel hasil input
+    function updateResultTable() {
+      $('#resultTable').html('<table class="table table-bordered"><thead><tr><th>#</th><th>' + columnNames.join('</th><th>') + '</th></tr></thead><tbody></tbody></table>');
+      tableData.forEach((row, index) => {
+        $('#resultTable tbody').append(`<tr><td>${index + 1}</td><td>${row.join('</td><td>')}</td></tr>`);
+      });
+    }
+
+    // Menangani tombol "Selesai" dan download PDF
+    $('#finishButton').click(function () {
+      $('#downloadButton').show();
+      $('#finishButton').hide();
+    });
+
+    $('#downloadButton').click(function () {
+      $.ajax({
+        url: '/create-pdf',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+          tableData: tableData,
+          columnNames: columnNames,
+          tableName: $('#tableName').val()
+        }),
+        success: function (response) {
+          toastr.success('PDF berhasil dibuat!');
+          window.location.href = `/download-pdf?file=${response.filePath}`;
+        },
+        error: function (xhr, status, error) {
+          toastr.error('Gagal membuat PDF.');
+        }
+      });
+    });
+  });
+</script>
+
+</body>
+</html>
